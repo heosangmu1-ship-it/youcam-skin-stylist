@@ -1,0 +1,9 @@
+[
+  {"id":"ivory-knit","name":"Ivory Soft Knit","file":"ivory-knit.png","color":"#F2EBDD","tone":"neutral","brightness":88,"note":"matte merino knit crew"},
+  {"id":"sage-cardigan","name":"Sage Cardigan","file":"sage-cardigan.png","color":"#A8BFA0","tone":"cool","brightness":70,"note":"matte cotton knit cardigan"},
+  {"id":"navy-blazer","name":"Navy Blazer","file":"navy-blazer.png","color":"#1F2D4A","tone":"cool","brightness":22,"note":"matte wool blazer"},
+  {"id":"coral-satin","name":"Coral Satin Blouse","file":"coral-satin.png","color":"#FF6F61","tone":"warm","brightness":62,"note":"shiny satin blouse"},
+  {"id":"dusty-blue-linen","name":"Dusty Blue Linen Shirt","file":"dusty-blue-linen.png","color":"#8FA9C4","tone":"cool","brightness":66,"note":"matte linen shirt"},
+  {"id":"camel-sweater","name":"Camel Wool Sweater","file":"camel-sweater.png","color":"#C19A6B","tone":"warm","brightness":58,"note":"matte wool knit sweater"},
+  {"id":"rose-silk","name":"Rose Silk Top","file":"rose-silk.png","color":"#E0607E","tone":"warm","brightness":55,"note":"shiny silk top"}
+]

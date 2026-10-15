@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skin-Aware Stylist</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <h1>Skin-Aware Stylist</h1>
+  <p class="lead">Your skin result picks the clothes. YouCam Skin AI scores your skin, then YouCam AI Clothes Virtual Try-On shows the looks that suit it.</p>
+  <p id="mode" class="badge" hidden></p>
+</header>
+<main>
+  <p id="status" role="status" aria-live="polite"></p>
+
+  <section aria-labelledby="h-photo">
+    <h2 id="h-photo">1. Choose a photo</h2>
+    <fieldset>
+      <legend>Sample faces (recommended)</legend>
+      <div id="samples" class="samples"></div>
+    </fieldset>
+    <p><label>Or upload your own (JPEG or PNG, up to 8 MB)
+      <input type="file" id="file" accept="image/jpeg,image/png"></label></p>
+    <div class="consent">
+      <label><input type="checkbox" id="consent"> I agree that this photo is sent to the Perfect Corp YouCam API for analysis.</label>
+      <p class="small">Perfect Corp may keep the data for up to 30 days. This app keeps the photo in memory only and deletes it when you press "Delete my session" or after 10 minutes. Test faces are recommended; do not upload photos of other people without their consent.</p>
+    </div>
+    <button id="analyze" disabled>Analyze skin</button>
+  </section>
+
+  <section id="skin" aria-labelledby="h-skin" hidden>
+    <h2 id="h-skin">2. Your skin result</h2>
+    <ul id="concerns" class="concerns"></ul>
+    <button id="tryon">Try on 3 looks</button>
+  </section>
+
+  <section id="looks" aria-labelledby="h-looks" hidden>
+    <h2 id="h-looks">3. Looks picked for your skin</h2>
+    <div id="grid" class="grid"></div>
+  </section>
+
+  <p><button id="delete" class="secondary" hidden>Delete my session</button></p>
+</main>
+<footer>
+  <p id="units" class="small"></p>
+  <p class="small">AI-assisted development: code written by Claude (Anthropic) under direction of the entrant. Results are cosmetic guidance, not medical advice.</p>
+</footer>
+<script src="/app.js" type="module"></script>
+</body>
+</html>

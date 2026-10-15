@@ -1,0 +1,9 @@
+{
+  "skin": [
+    {"type":"radiance","ui_score":42,"raw_score":42},
+    {"type":"redness","ui_score":35,"raw_score":35},
+    {"type":"dark_circle_v2","ui_score":61,"raw_score":61},
+    {"type":"moisture","ui_score":74,"raw_score":74}
+  ],
+  "tryon": {"sage-cardigan": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGM4sWUBAARkAh2NzDMBAAAAAElFTkSuQmCC"}
+}
