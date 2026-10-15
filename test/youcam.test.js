@@ -66,7 +66,7 @@ test('cap refusal makes zero network calls (analyze)', async (t) => {
 });
 
 test('wrong key: error message does not leak key or URL', async (t) => {
-  const { mock, client } = await setup(800, 'sk-secret-123'); t.after(mock.close);
-  await assert.rejects(client.upload(png, 'image/png'), (e) => !/sk-secret|127\.0\.0\.1/.test(e.message + e.stack.split('\n')[0]) && e instanceof YoucamError);
+  const { mock, client } = await setup(800, 'leaky-key-123'); t.after(mock.close);
+  await assert.rejects(client.upload(png, 'image/png'), (e) => !/leaky-key|127\.0\.0\.1/.test(e.message + e.stack.split('\n')[0]) && e instanceof YoucamError);
   assert.equal(mock.counters.unauthorized, 1);
 });
