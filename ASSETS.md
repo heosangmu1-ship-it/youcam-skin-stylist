@@ -14,7 +14,7 @@ Every image and recorded response in this repo, where it came from, and under wh
 | `public/garments/dusty-blue-linen.png` | Synthetic product photo, dusty blue linen shirt | same | same | same, garment "dusty blue linen shirt". |
 | `public/garments/camel-sweater.png` | Synthetic product photo, camel sweater | same | same | same, garment "camel sweater". |
 | `public/garments/rose-silk.png` | Synthetic product photo, rose silk top | same | same | same, garment "rose silk top". |
-| `fixtures/<sampleId>.json` | Recorded real YouCam responses (skin analysis and 3 try-on images) for one sample | YouCam API, recorded by `scripts/record-fixtures.js` | Output of the YouCam API under its terms | Recorded with a real key. Used by demo mode. `sample-1.json` was recorded against the old placeholder image and must be re-recorded for face A. |
+| `fixtures/<sampleId>.json` | Recorded real YouCam responses (skin analysis and 3 try-on images) for one sample | YouCam API, recorded by `scripts/record-fixtures.js` | Output of the YouCam API under its terms | Recorded with a real key. Used by demo mode. |
 
 ## Provenance
 

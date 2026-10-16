@@ -5,7 +5,19 @@ A face photo goes to **YouCam Skin AI**, which scores radiance, redness, dark ci
 A rule-based stylist (no runtime LLM, no extra paid key) ranks a small garment catalog by those scores and writes a
 "why this fits your skin result" line for each pick; it flags every concern scoring under 80 as an area to care for and quotes that score in the line. **YouCam AI Clothes Virtual Try-On** then renders the top 3 looks on the same photo.
 
-Node >= 20, zero npm dependencies.
+Node >= 20.12, zero npm dependencies.
+
+![Looks picked for a skin result](docs/screenshots/3-looks.png)
+
+## Quick start for judges (no key needed)
+
+```
+npm start        # http://localhost:8787, demo mode, replays recorded real YouCam responses
+node --test      # 60+ tests against a local mock of the YouCam API, no network
+```
+
+Pick a sample face, tick the consent box, press "Analyze skin", then "Try on 3 looks". With your own key (below) the same page calls the live YouCam API.
+Screenshots: `docs/screenshots/`.
 
 ## Run with a key
 
@@ -67,7 +79,7 @@ npm run scan                 # secret scan: tracked files and all history (also 
 
 ## AI-assisted development disclosure
 
-Code written by Claude (Anthropic) under direction of the entrant; test images generated with Gemini; the entrant reviews and selects.
+Code and tests were written by Claude (Anthropic) working from the entrant's task description. The demo faces are public-domain StyleGAN images (Wikimedia Commons) extended with the YouCam image-extender API, and the garment photos were generated with the YouCam image-generator API (see ASSETS.md). The entrant reviews and selects the work; the stylist is a rule engine, not an LLM.
 
 ## License and terms
 
