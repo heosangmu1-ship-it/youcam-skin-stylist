@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createApp } from '../src/server.js';
 import { createGuard } from '../src/units.js';
-import { startApp, post, consent, catalog, tmpLedger } from './helpers.js';
+import { startApp, post, consent, catalog, tmpLedger, tmpPublic } from './helpers.js';
 import { startMock } from './mock-youcam.js';
 import { createSessions } from '../src/sessions.js';
 
-const png = readFileSync(new URL('../public/samples/sample-1.png', import.meta.url));
+const png = readFileSync(new URL('./img/sample-1.png', import.meta.url));
 const live = async (t, opts = {}) => {
   const mock = await startMock();
   const app = await startApp({ mock, ...opts });
@@ -157,7 +158,8 @@ test('sweep removes expired sessions', () => {
 });
 
 test('static: index, content types, traversal blocked', async (t) => {
-  const app = await demo(t);
+  const app = await startApp({ publicDir: fileURLToPath(new URL('../public', import.meta.url)) }); // the shipped UI files, not samples
+  t.after(app.close);
   const idx = await fetch(app.url + '/');
   assert.equal(idx.status, 200);
   assert.match(idx.headers.get('content-type'), /text\/html/);
@@ -197,7 +199,7 @@ test('tryon rejects duplicate garment ids (no double charge)', async (t) => {
 test('malformed demo fixture is "no recorded data" (404), not a 500', async (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'fx-'));
   writeFileSync(join(dir, 'sample-1.json'), '{"skin":"nope"}');
-  const server = createApp({ client: null, ledger: createGuard({ path: tmpLedger() }), catalog, fixturesDir: dir });
+  const server = createApp({ client: null, ledger: createGuard({ path: tmpLedger() }), catalog, fixturesDir: dir, publicDir: tmpPublic() });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   t.after(() => { server.closeAllConnections(); server.close(); });
   const r = await post(`http://127.0.0.1:${server.address().port}`, '/api/skin?sample=sample-1', { headers: consent });

@@ -31,6 +31,8 @@ Without `YOUCAM_API_KEY` the app replays `fixtures/<sampleId>.json` for the bund
 `{"skin": <data.results.output of a real skin task>, "tryon": {"<garmentId>": "<base64 image>"}}`.
 Missing try-on entries fall back to the sample photo. Uploading your own photo needs a key.
 
+Sample faces and garment images are synthetic; sources and licenses are in [ASSETS.md](ASSETS.md).
+
 Record real fixtures (spends 9 + 3x2 = 15 units per sample, skips samples that already have a file, aborts if the cap would refuse):
 
 ```

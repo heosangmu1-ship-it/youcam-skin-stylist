@@ -8,7 +8,7 @@ import { startMock } from './mock-youcam.js';
 import { createClient } from '../src/youcam.js';
 import { createGuard, UnitCapError } from '../src/units.js';
 import { createApp } from '../src/server.js';
-import { catalog, tmpLedger, post, consent } from './helpers.js';
+import { catalog, tmpLedger, tmpPublic, post, consent } from './helpers.js';
 
 const setup = async (t, cap = 800) => {
   const mock = await startMock();
@@ -16,8 +16,9 @@ const setup = async (t, cap = 800) => {
   const ledger = createGuard({ path: tmpLedger(), cap });
   const client = createClient({ base: mock.url, key: 'test-key', guard: ledger, pollMs: 1, timeoutMs: 2000 });
   const fixturesDir = mkdtempSync(join(tmpdir(), 'fx-'));
+  const pub = tmpPublic();
   const lines = [];
-  return { mock, ledger, client, fixturesDir, lines, args: { client, ledger, catalog, fixturesDir, log: (...a) => lines.push(a.join(' ')) } };
+  return { mock, ledger, client, fixturesDir, pub, lines, args: { client, ledger, catalog, fixturesDir, samplesDir: join(pub, 'samples'), garmentsDir: join(pub, 'garments'), log: (...a) => lines.push(a.join(' ')) } };
 };
 
 test('record writes {skin, tryon x3, recordedAt} per sample and prices the run first', async (t) => {
@@ -54,7 +55,7 @@ test('demo mode serves recorded fixture: skin + try-on images, ledger stays 0', 
   const s = await setup(t);
   await record(s.args);
   const ledger = createGuard({ path: tmpLedger(), cap: 800 });
-  const server = createApp({ client: null, ledger, catalog, fixturesDir: s.fixturesDir });
+  const server = createApp({ client: null, ledger, catalog, fixturesDir: s.fixturesDir, publicDir: s.pub });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   t.after(() => { server.closeAllConnections(); server.close(); });
   const url = `http://127.0.0.1:${server.address().port}`;

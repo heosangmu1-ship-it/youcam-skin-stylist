@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createApp } from '../src/server.js';
@@ -9,11 +9,21 @@ import { createSessions } from '../src/sessions.js';
 export const catalog = JSON.parse(readFileSync(new URL('../catalog.json', import.meta.url), 'utf8'));
 export const tmpLedger = () => join(mkdtempSync(join(tmpdir(), 'ycl-')), 'units.json');
 
+// Temp publicDir: samples and garments copied from test/img, so tests never read the shipped public/ assets.
+const IMG = new URL('./img/', import.meta.url);
+export function tmpPublic() {
+  const dir = mkdtempSync(join(tmpdir(), 'pub-'));
+  mkdirSync(join(dir, 'samples')); mkdirSync(join(dir, 'garments'));
+  for (const f of readdirSync(IMG).filter((f) => f.startsWith('sample-'))) copyFileSync(new URL(f, IMG), join(dir, 'samples', f));
+  for (const g of catalog) copyFileSync(new URL('sage-cardigan.png', IMG), join(dir, 'garments', g.file));
+  return dir;
+}
+
 // mock: null = demo mode; otherwise live against the mock.
-export async function startApp({ mock = null, cap = 800, sessions = createSessions() } = {}) {
+export async function startApp({ mock = null, cap = 800, sessions = createSessions(), publicDir = tmpPublic() } = {}) {
   const ledger = createGuard({ path: tmpLedger(), cap });
   const client = mock ? createClient({ base: mock.url, key: 'test-key', guard: ledger, pollMs: 1, timeoutMs: 2000 }) : null;
-  const server = createApp({ client, ledger, sessions, catalog });
+  const server = createApp({ client, ledger, sessions, catalog, publicDir });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const url = `http://127.0.0.1:${server.address().port}`;
   return { url, ledger, sessions, close: () => { server.closeAllConnections(); server.close(); } };

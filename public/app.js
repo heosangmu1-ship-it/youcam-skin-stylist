@@ -44,7 +44,7 @@ async function init() {
   $('samples').replaceChildren(...cfg.samples.map((s) => {
     const input = el('input', { type: 'radio', name: 'sample', value: s.id });
     input.addEventListener('change', () => { picked = s; $('file').value = ''; ready(); });
-    return el('label', {}, input, el('img', { src: s.url, alt: `Sample face ${s.id}`, width: 88, height: 104 }));
+    return el('label', {}, input, el('img', { src: s.url, alt: `Sample face ${s.id}` }));
   }));
   $('file').addEventListener('change', () => { picked = null; document.querySelectorAll('[name=sample]').forEach((r) => (r.checked = false)); $('tips').classList.remove('flag'); $('photo-note').textContent = ''; if ($('file').files[0]) checkPhoto($('file').files[0]); ready(); });
   $('consent').addEventListener('change', ready);

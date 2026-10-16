@@ -11,7 +11,7 @@ section { background:var(--card); border:1px solid var(--line); border-radius:.7
 fieldset { border:1px solid var(--line); border-radius:.5rem; }
 .samples { display:flex; gap:1rem; flex-wrap:wrap; }
 .samples label { display:block; text-align:center; cursor:pointer; }
-.samples img { display:block; width:5.5rem; height:6.5rem; object-fit:cover; border:3px solid transparent; border-radius:.5rem; }
+.samples img { display:block; width:5.5rem; aspect-ratio:3/4; height:auto; object-fit:cover; border:3px solid transparent; border-radius:.5rem; }
 .samples input:checked + img { border-color:var(--accent); }
 .samples input:focus-visible + img, :focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
 .samples input { position:absolute; opacity:0; }

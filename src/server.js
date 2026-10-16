@@ -74,7 +74,8 @@ export function createApp({ client = null, ledger, sessions = createSessions(), 
       if (client) img = await client.tryOnGarment(s.fileId, bytes, sniff(bytes));
       else {
         const b64 = fixture(s.sample)?.tryon?.[id];
-        img = b64 ? { bytes: Buffer.from(b64, 'base64'), type: 'image/png' } : { bytes: readFileSync(join(publicDir, 'samples', samples.find((x) => x.id === s.sample).file)), type: 'image/png' };
+        const src = readFileSync(join(publicDir, 'samples', samples.find((x) => x.id === s.sample).file));
+        img = b64 ? { bytes: Buffer.from(b64, 'base64'), type: 'image/png' } : { bytes: src, type: sniff(src) };
       }
       const n = s.images.push(img) - 1;
       return { garmentId: id, imageUrl: `/result/${s.id}/${n}`, why: s.ranked.find((r) => r.id === id).why };

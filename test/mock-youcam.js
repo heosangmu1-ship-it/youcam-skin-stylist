@@ -2,7 +2,7 @@
 import http from 'node:http';
 import { readFileSync } from 'node:fs';
 
-const PNG = Buffer.from(readFileSync(new URL('../public/garments/sage-cardigan.png', import.meta.url)));
+const PNG = Buffer.from(readFileSync(new URL('./img/sage-cardigan.png', import.meta.url)));
 
 export async function startMock({ key = 'test-key' } = {}) {
   const counters = { file: 0, put: 0, skin: 0, tryon: 0, polls: 0, unauthorized: 0 };
