@@ -79,7 +79,7 @@ npm run scan                 # secret scan: tracked files and all history (also 
 
 ## AI-assisted development disclosure
 
-Code and tests were written by Claude (Anthropic) working from the entrant's task description. The demo faces are public-domain StyleGAN images (Wikimedia Commons) extended with the YouCam image-extender API, and the garment photos were generated with the YouCam image-generator API (see ASSETS.md). The entrant reviews and selects the work; the stylist is a rule engine, not an LLM.
+Code and tests were written by Claude (Anthropic). The demo faces are public-domain StyleGAN images (Wikimedia Commons) extended with the YouCam image-extender API, and the garment photos were generated with the YouCam image-generator API (see ASSETS.md). The entrant reviews the finished work and submits it. The stylist is a rule engine, not an LLM.
 
 ## License and terms
 

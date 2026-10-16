@@ -15,6 +15,12 @@ test('verdict thresholds and weakness', () => {
   assert.equal(severity(30), 70);
 });
 
+test('verdict agrees with the weakness flag at every score', () => {
+  assert.notEqual(verdict(79), 'healthy');
+  assert.equal(verdict(80), 'healthy');
+  for (let s = 0; s <= 100; s++) assert.equal(isWeak(s), verdict(s) !== 'healthy', `score ${s}`);
+});
+
 test('low radiance prefers mid-tone over very dark', () => {
   const r = rank(only('radiance', 20), catalog);
   assert.ok(pos(r, 'sage-cardigan') < pos(r, 'navy-blazer'));

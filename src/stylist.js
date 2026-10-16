@@ -6,7 +6,7 @@ export const severity = (score) => 100 - quality(score);
 // Below this a concern is flagged as an area to care for (real demo scores sit at 58-99; 50 never fired).
 export const WEAK_BELOW = 80;
 export const isWeak = (score) => quality(score) < WEAK_BELOW;
-export const verdict = (score) => (quality(score) >= 70 ? 'healthy' : quality(score) >= 50 ? 'okay' : 'needs care');
+export const verdict = (score) => (quality(score) >= WEAK_BELOW ? 'healthy' : quality(score) >= 50 ? 'okay' : 'needs care');
 
 export const LABELS = { radiance: 'Radiance', redness: 'Redness', dark_circle_v2: 'Dark circles', moisture: 'Moisture' };
 
