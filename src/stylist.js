@@ -3,7 +3,9 @@
 export const HIGHER_IS_BETTER = true;
 const quality = (score) => (HIGHER_IS_BETTER ? score : 100 - score); // 0..100, higher = healthier
 export const severity = (score) => 100 - quality(score);
-export const isWeak = (score) => quality(score) < 50;
+// Below this a concern is flagged as an area to care for (real demo scores sit at 58-99; 50 never fired).
+export const WEAK_BELOW = 80;
+export const isWeak = (score) => quality(score) < WEAK_BELOW;
 export const verdict = (score) => (quality(score) >= 70 ? 'healthy' : quality(score) >= 50 ? 'okay' : 'needs care');
 
 export const LABELS = { radiance: 'Radiance', redness: 'Redness', dark_circle_v2: 'Dark circles', moisture: 'Moisture' };
@@ -25,23 +27,23 @@ const redPink = (hex) => { const { h, s } = hueSat(hex); return (h <= 20 || h >=
 export const RULES = {
   radiance: {
     fit: (g) => (g.brightness >= 55 && g.brightness <= 80 ? 1 : g.brightness < 35 ? -1 : 0),
-    why: 'your radiance is low, so its mid-tone brightness near the face adds glow',
+    why: (n) => `Your radiance score is ${n}, so its mid-tone brightness near the face adds glow`,
   },
   redness: {
     fit: (g) => (g.tone === 'cool' ? 1 : g.tone === 'warm' ? -1 : 0) + (redPink(g.color) ? -1.5 : 0),
-    why: 'your redness is high, so its calm cool color avoids saturated red or pink',
+    why: (n) => `Your redness score is ${n}, so its calm cool color avoids saturated red or pink`,
   },
   dark_circle_v2: {
     fit: (g) => (g.brightness < 30 ? -1 : g.brightness >= 55 ? 1 : 0),
-    why: 'dark circles show, so its lighter color keeps the eye area from looking shadowed',
+    why: (n) => `Your dark circle score is ${n}, so its lighter color keeps the eye area from looking shadowed`,
   },
   moisture: {
     fit: (g) => (SHINY.test(g.note) ? -1 : MATTE.test(g.note) ? 1 : 0),
-    why: 'your skin is dry, so its soft matte fabric looks kinder than a shiny one',
+    why: (n) => `Your moisture score is ${n}, so its soft matte fabric looks kinder than a shiny one`,
   },
 };
 
-const sentence = (parts) => { const s = parts.join('; '); return s[0].toUpperCase() + s.slice(1) + '.'; };
+const sentence = (parts) => parts.map((p) => `${p}.`).join(' ');
 
 export function rank(concerns, catalog) {
   const weak = concerns.filter((c) => RULES[c.key] && isWeak(c.score));
@@ -52,7 +54,7 @@ export function rank(concerns, catalog) {
       return {
         i, id: g.id, name: g.name,
         score: parts.reduce((t, p) => t + p.v, 0),
-        why: good.length ? sentence(good.map((p) => RULES[p.c.key].why))
+        why: good.length ? sentence(good.map((p) => RULES[p.c.key].why(p.c.score)))
           : weak.length ? 'A neutral pick that does not work against your skin result.'
           : 'No weak area in your skin result, so this is a balanced pick.',
       };

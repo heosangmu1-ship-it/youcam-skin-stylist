@@ -11,14 +11,14 @@ test('verdict thresholds and weakness', () => {
   assert.equal(verdict(80), 'healthy');
   assert.equal(verdict(55), 'okay');
   assert.equal(verdict(30), 'needs care');
-  assert.ok(isWeak(49) && !isWeak(50));
+  assert.ok(isWeak(79) && !isWeak(80));
   assert.equal(severity(30), 70);
 });
 
 test('low radiance prefers mid-tone over very dark', () => {
   const r = rank(only('radiance', 20), catalog);
   assert.ok(pos(r, 'sage-cardigan') < pos(r, 'navy-blazer'));
-  assert.match(r[0].why, /radiance is low/i);
+  assert.match(r[0].why, /radiance score is 20/i);
 });
 
 test('high redness avoids saturated red/pink, prefers cool', () => {
@@ -60,4 +60,27 @@ test('every ranked item has a one-sentence reason; all garments returned', () =>
 test('unknown concern keys are ignored', () => {
   assert.equal(rank([{ key: 'wrinkles', score: 1 }], catalog).length, catalog.length);
   assert.ok(RULES.radiance && RULES.moisture);
+});
+
+test('real demo scores: top 3 differ across faces and each reason quotes its own score', () => {
+  const faces = {
+    1: { radiance: 80, redness: 68, dark_circle_v2: 77, moisture: 75 },
+    2: { redness: 99, radiance: 79, dark_circle_v2: 58, moisture: 65 },
+    3: { redness: 99, radiance: 93, dark_circle_v2: 72, moisture: 73 },
+  };
+  const tops = Object.values(faces).map((f) => rank(Object.entries(f).map(([key, score]) => ({ key, score })), catalog).slice(0, 3));
+  const sets = tops.map((r) => ids(r).sort().join());
+  assert.ok(new Set(sets).size > 1);
+  tops.forEach((top, i) => {
+    const f = Object.values(faces)[i];
+    for (const x of top) {
+      const nums = [...x.why.matchAll(/score is (\d+)/g)].map((m) => Number(m[1]));
+      assert.ok(nums.length && nums.every((n) => Object.values(f).includes(n)), x.why);
+    }
+  });
+  assert.match(tops[1][0].why, /score is (99|79|58|65)/);
+});
+
+test('concerns at 80 or above are not flagged', () => {
+  assert.match(rank([{ key: 'redness', score: 80 }], catalog)[0].why, /balanced pick/);
 });

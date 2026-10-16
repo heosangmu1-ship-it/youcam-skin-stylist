@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, copyFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, readFileSync, readdirSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createApp } from '../src/server.js';
@@ -20,10 +20,18 @@ export function tmpPublic() {
 }
 
 // mock: null = demo mode; otherwise live against the mock.
-export async function startApp({ mock = null, cap = 800, sessions = createSessions(), publicDir = tmpPublic() } = {}) {
+// Temp fixtures dir with a minimal sample-1 (skin + one try-on), so demo tests never read the recorded fixtures/.
+export function tmpFixtures() {
+  const dir = mkdtempSync(join(tmpdir(), 'fx-'));
+  const skin = [['radiance', 30], ['redness', 40], ['dark_circle_v2', 50], ['moisture', 60]].map(([type, ui_score]) => ({ type, ui_score }));
+  writeFileSync(join(dir, 'sample-1.json'), JSON.stringify({ skin, tryon: { 'sage-cardigan': readFileSync(new URL('sage-cardigan.png', IMG)).toString('base64') } }));
+  return dir;
+}
+
+export async function startApp({ mock = null, cap = 800, sessions = createSessions(), publicDir = tmpPublic(), fixturesDir = tmpFixtures() } = {}) {
   const ledger = createGuard({ path: tmpLedger(), cap });
   const client = mock ? createClient({ base: mock.url, key: 'test-key', guard: ledger, pollMs: 1, timeoutMs: 2000 }) : null;
-  const server = createApp({ client, ledger, sessions, catalog, publicDir });
+  const server = createApp({ client, ledger, sessions, catalog, publicDir, fixturesDir });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const url = `http://127.0.0.1:${server.address().port}`;
   return { url, ledger, sessions, close: () => { server.closeAllConnections(); server.close(); } };

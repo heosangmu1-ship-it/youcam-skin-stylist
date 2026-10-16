@@ -3,7 +3,7 @@
 Hackathon entry for the YouCam API challenge (Skin AI + eCommerce Virtual Try-On).
 A face photo goes to **YouCam Skin AI**, which scores radiance, redness, dark circles and moisture.
 A rule-based stylist (no runtime LLM, no extra paid key) ranks a small garment catalog by those scores and writes a
-"why this fits your skin result" line for each pick. **YouCam AI Clothes Virtual Try-On** then renders the top 3 looks on the same photo.
+"why this fits your skin result" line for each pick; it flags every concern scoring under 80 as an area to care for and quotes that score in the line. **YouCam AI Clothes Virtual Try-On** then renders the top 3 looks on the same photo.
 
 Node >= 20, zero npm dependencies.
 
@@ -33,7 +33,7 @@ Missing try-on entries fall back to the sample photo. Uploading your own photo n
 
 Sample faces and garment images are synthetic; sources and licenses are in [ASSETS.md](ASSETS.md).
 
-Record real fixtures (spends 9 + 3x2 = 15 units per sample, skips samples that already have a file, aborts if the cap would refuse):
+Record real fixtures (15 units per new sample; a sample with a stored skin is never re-analyzed, only its missing top-3 try-ons cost 2 each; aborts if the cap would refuse):
 
 ```
 node --env-file=.env.local scripts/record-fixtures.js --yes-spend

@@ -8,6 +8,8 @@ import { startMock } from './mock-youcam.js';
 import { createClient } from '../src/youcam.js';
 import { createGuard, UnitCapError } from '../src/units.js';
 import { createApp } from '../src/server.js';
+import { rank, concernsFrom } from '../src/stylist.js';
+import { SKIN_CONCERNS } from '../src/youcam.js';
 import { catalog, tmpLedger, tmpPublic, post, consent } from './helpers.js';
 
 const setup = async (t, cap = 800) => {
@@ -34,13 +36,24 @@ test('record writes {skin, tryon x3, recordedAt} per sample and prices the run f
   assert.ok(!Number.isNaN(Date.parse(f.recordedAt)));
 });
 
-test('record resumes: existing fixtures are skipped, no units spent', async (t) => {
+test('record resumes at try-on level: stored skin kept, no analyze, stale pruned, ledger = 2 x missing', async (t) => {
   const s = await setup(t);
-  writeFileSync(join(s.fixturesDir, 'sample-1.json'), '{"skin":[]}');
-  assert.deepEqual(await record(s.args), ['sample-2']);
-  assert.equal(s.ledger.spent, 15);
+  const skin = [{ type: 'redness', ui_score: 60 }, { type: 'radiance', ui_score: 90 }, { type: 'dark_circle_v2', ui_score: 90 }, { type: 'moisture', ui_score: 90 }];
+  const top = rank(concernsFrom(skin, SKIN_CONCERNS), catalog).slice(0, 3).map((r) => r.id);
+  const stale = catalog.map((g) => g.id).find((id) => !top.includes(id));
+  writeFileSync(join(s.fixturesDir, 'sample-1.json'), JSON.stringify({ skin, tryon: { [top[0]]: 'QUJD', [stale]: 'WFla' }, recordedAt: '2026-01-01T00:00:00.000Z' }));
+  assert.deepEqual(await record(s.args), ['sample-1', 'sample-2']);
+  assert.equal(s.mock.counters.skin, 1); // sample-2 only
+  assert.equal(s.mock.counters.tryon, 2 + 3);
+  assert.equal(s.ledger.spent, 2 * 2 + 15);
+  const f = JSON.parse(readFileSync(join(s.fixturesDir, 'sample-1.json'), 'utf8'));
+  assert.deepEqual(f.skin, skin);
+  assert.deepEqual(Object.keys(f.tryon).sort(), [...top].sort());
+  assert.equal(f.tryon[top[0]], 'QUJD'); // kept, not re-run
+  assert.ok(!(stale in f.tryon));
+  const spent = s.ledger.spent;
   assert.deepEqual(await record(s.args), []);
-  assert.equal(s.ledger.spent, 15);
+  assert.equal(s.ledger.spent, spent);
 });
 
 test('record aborts before any network call when the cap would refuse', async (t) => {
