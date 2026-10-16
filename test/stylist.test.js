@@ -84,3 +84,24 @@ test('real demo scores: top 3 differ across faces and each reason quotes its own
 test('concerns at 80 or above are not flagged', () => {
   assert.match(rank([{ key: 'redness', score: 80 }], catalog)[0].why, /balanced pick/);
 });
+
+test('garment-specific reasons: top 3 differ pairwise and cite score plus a garment attribute', () => {
+  const faces = [
+    { radiance: 80, redness: 68, dark_circle_v2: 77, moisture: 75 },
+    { redness: 99, radiance: 79, dark_circle_v2: 58, moisture: 65 },
+    { redness: 99, radiance: 93, dark_circle_v2: 72, moisture: 73 },
+  ];
+  for (const f of faces) {
+    const top = rank(Object.entries(f).map(([key, score]) => ({ key, score })), catalog).slice(0, 3);
+    assert.equal(new Set(top.map((x) => x.why)).size, 3, top.map((x) => x.why).join('\n'));
+    for (const x of top) {
+      const clauses = x.why.split(/\. /);
+      assert.ok(clauses.length <= 2);
+      for (const c of clauses) {
+        assert.match(c, /score is \d+/);
+        assert.ok(c.includes(`brightness ${x.traits.brightness}/100`) || c.includes(x.traits.fabric) || c.includes(`${x.name}'s ${x.traits.tone} tone`), c);
+      }
+      assert.deepEqual(Object.keys(x.traits), ['color', 'tone', 'brightness', 'fabric']);
+    }
+  }
+});

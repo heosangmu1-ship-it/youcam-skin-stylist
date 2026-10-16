@@ -78,7 +78,7 @@ export function createApp({ client = null, ledger, sessions = createSessions(), 
         img = b64 ? { bytes: Buffer.from(b64, 'base64'), type: 'image/png' } : { bytes: src, type: sniff(src) };
       }
       const n = s.images.push(img) - 1;
-      return { garmentId: id, imageUrl: `/result/${s.id}/${n}`, why: s.ranked.find((r) => r.id === id).why };
+      return { garmentId: id, imageUrl: `/result/${s.id}/${n}`, why: s.ranked.find((r) => r.id === id).why, traits: s.ranked.find((r) => r.id === id).traits };
     }));
     const looks = settled.map((r, i) => (r.status === 'fulfilled' ? r.value : { garmentId: ids[i], error: r.reason instanceof Error && r.reason.status ? r.reason.message : 'Try-on failed.' }));
     const cap = settled.find((r) => r.reason instanceof UnitCapError);

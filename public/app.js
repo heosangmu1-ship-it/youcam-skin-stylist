@@ -31,8 +31,11 @@ function el(tag, props = {}, ...kids) {
   return n;
 }
 
+const step = (n) => document.querySelectorAll('#steps li').forEach((li, i) => { li.toggleAttribute('aria-current', i === n - 1); li.classList.toggle('done', i < n - 1); if (i === n - 1) li.setAttribute('aria-current', 'step'); });
+
 function reset() {
   session = null;
+  step(1);
   for (const id of ['skin', 'looks', 'delete']) $(id).hidden = true;
   $('grid').replaceChildren();
 }
@@ -44,7 +47,8 @@ async function init() {
   $('samples').replaceChildren(...cfg.samples.map((s) => {
     const input = el('input', { type: 'radio', name: 'sample', value: s.id });
     input.addEventListener('change', () => { picked = s; $('file').value = ''; ready(); });
-    return el('label', {}, input, el('img', { src: s.url, alt: `Sample face ${s.id}` }));
+    const name = `Sample ${String.fromCharCode(65 + cfg.samples.indexOf(s))}`;
+    return el('label', {}, input, el('img', { src: s.url, alt: name }), el('span', {}, name));
   }));
   $('file').addEventListener('change', () => { picked = null; document.querySelectorAll('[name=sample]').forEach((r) => (r.checked = false)); $('tips').classList.remove('flag'); $('photo-note').textContent = ''; if ($('file').files[0]) checkPhoto($('file').files[0]); ready(); });
   $('consent').addEventListener('change', ready);
@@ -63,10 +67,11 @@ async function analyze() {
     session = await api(picked ? `/api/skin?sample=${encodeURIComponent(picked.id)}` : '/api/skin', {
       method: 'POST', headers: { 'X-Consent': 'yes', ...(picked ? {} : { 'Content-Type': f.type }) }, body: picked ? undefined : f,
     });
-    $('concerns').replaceChildren(...session.concerns.map((c) => el('li', {},
-      el('div', { className: 'row' }, el('strong', {}, c.label), el('span', {}, `${c.score}/100, ${c.verdict}`)),
-      el('div', { className: 'bar', role: 'img', ariaLabel: `${c.label} ${c.score} out of 100` }, el('span', { style: `width:${c.score}%` })))));
+    $('concerns').replaceChildren(...session.concerns.map((c) => el('li', { className: c.score < 80 ? 'flagged' : '' },
+      el('div', { className: 'row' }, el('strong', {}, c.label), el('span', { className: 'tag' }, c.score < 80 ? 'Worth styling for' : 'Healthy'), el('span', { className: 'num' }, `${c.score}/100, ${c.verdict}`)),
+      el('div', { className: 'bar', role: 'img', ariaLabel: `${c.label} ${c.score} out of 100, marker at 80` }, el('span', { style: `width:${c.score}%` })))));
     $('skin').hidden = false; $('delete').hidden = false;
+    step(2);
     say('Skin result ready.');
   } catch (e) {
     say(e.message, true);
@@ -76,22 +81,37 @@ async function analyze() {
   ready();
 }
 
+function look(l, featured) {
+  const r = session.ranked.find((x) => x.id === l.garmentId);
+  const g = cfg.garments.find((x) => x.id === l.garmentId);
+  const t = l.traits ?? r.traits;
+  const shot = l.imageUrl ? el('figure', { className: 'shot' },
+    el('img', { className: 'after', src: l.imageUrl, alt: `You wearing ${r.name}` }),
+    el('img', { className: 'before', src: preview, alt: 'Your photo' }),
+    el('figcaption', {}, 'After')) : el('p', { className: 'err' }, l.error);
+  const whys = (l.why ?? '').split(/(?<=\.) /).filter(Boolean);
+  return el('article', { className: featured ? 'look featured' : 'look' }, shot, el('div', {},
+    el('p', { className: 'kicker' }, featured ? 'Best match' : 'Also good'),
+    el('h3', {}, r.name),
+    el('div', { className: 'garment' }, el('img', { src: g.url, alt: `${r.name} garment` }),
+      el('p', { className: 'traits' }, el('span', { className: 'swatch', style: `background:${t.color}` }), `${t.tone} tone, brightness ${t.brightness}/100, ${t.fabric}`)),
+    el('ul', { className: 'whys' }, ...whys.map((w) => el('li', {}, w)))));
+}
+
 async function tryon() {
   $('tryon').disabled = true;
   say('Rendering looks, this can take a minute...');
+  $('grid').setAttribute('aria-busy', 'true');
+  $('grid').replaceChildren(...[0, 1, 2].map((i) => el('article', { className: i ? 'look sk' : 'look sk featured' }, el('div', { className: 'skel' }), el('div', {}, el('div', { className: 'skel line' }), el('div', { className: 'skel line' })))));
+  $('looks').hidden = false;
   try {
     const garmentIds = session.ranked.slice(0, 3).map((r) => r.id);
     const { looks } = await api('/api/tryon', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: session.sessionId, garmentIds }) });
-    const name = (id) => session.ranked.find((r) => r.id === id).name;
-    $('grid').replaceChildren(...looks.map((l) => el('article', { className: 'card' },
-      el('div', { className: 'pair' },
-        el('figure', {}, el('img', { src: preview, alt: 'Your photo' }), el('figcaption', {}, 'Before')),
-        l.imageUrl ? el('figure', {}, el('img', { src: l.imageUrl, alt: `You wearing ${name(l.garmentId)}` }), el('figcaption', {}, 'After')) : el('p', { className: 'err' }, l.error)),
-      el('h3', {}, name(l.garmentId)),
-      l.why ? el('p', {}, l.why) : '')));
-    $('looks').hidden = false;
+    $('grid').replaceChildren(...looks.map((l, i) => look(l, i === 0)));
+    step(3);
     say(looks.every((l) => l.imageUrl) ? 'Looks ready.' : 'Some looks failed, see the cards.', !looks.every((l) => l.imageUrl));
-  } catch (e) { say(e.message, true); }
+  } catch (e) { $('grid').replaceChildren(); $('looks').hidden = true; say(e.message, true); }
+  $('grid').setAttribute('aria-busy', 'false');
   await refresh().catch(() => {});
   $('tryon').disabled = false;
 }

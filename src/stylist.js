@@ -27,19 +27,19 @@ const redPink = (hex) => { const { h, s } = hueSat(hex); return (h <= 20 || h >=
 export const RULES = {
   radiance: {
     fit: (g) => (g.brightness >= 55 && g.brightness <= 80 ? 1 : g.brightness < 35 ? -1 : 0),
-    why: (n) => `Your radiance score is ${n}, so its mid-tone brightness near the face adds glow`,
+    why: (n, g) => `Your radiance score is ${n}, so its mid-tone (brightness ${g.brightness}/100) near the face adds glow`,
   },
   redness: {
     fit: (g) => (g.tone === 'cool' ? 1 : g.tone === 'warm' ? -1 : 0) + (redPink(g.color) ? -1.5 : 0),
-    why: (n) => `Your redness score is ${n}, so its calm cool color avoids saturated red or pink`,
+    why: (n, g) => `Your redness score is ${n}, so the ${g.name}'s ${g.tone} tone stays away from saturated red or pink`,
   },
   dark_circle_v2: {
     fit: (g) => (g.brightness < 30 ? -1 : g.brightness >= 55 ? 1 : 0),
-    why: (n) => `Your dark circle score is ${n}, so its lighter color keeps the eye area from looking shadowed`,
+    why: (n, g) => `Your dark circle score is ${n}, so its lighter color (brightness ${g.brightness}/100) keeps the eye area from looking shadowed`,
   },
   moisture: {
     fit: (g) => (SHINY.test(g.note) ? -1 : MATTE.test(g.note) ? 1 : 0),
-    why: (n) => `Your moisture score is ${n}, so its soft matte fabric looks kinder than a shiny one`,
+    why: (n, g) => `Your moisture score is ${n}, so its ${g.note} looks kinder than a shiny fabric`,
   },
 };
 
@@ -53,14 +53,15 @@ export function rank(concerns, catalog) {
       const good = parts.filter((p) => p.v > 0).sort((a, b) => b.v - a.v).slice(0, 2);
       return {
         i, id: g.id, name: g.name,
+        traits: { color: g.color, tone: g.tone, brightness: g.brightness, fabric: g.note },
         score: parts.reduce((t, p) => t + p.v, 0),
-        why: good.length ? sentence(good.map((p) => RULES[p.c.key].why(p.c.score)))
+        why: good.length ? sentence(good.map((p) => RULES[p.c.key].why(p.c.score, g)))
           : weak.length ? 'A neutral pick that does not work against your skin result.'
           : 'No weak area in your skin result, so this is a balanced pick.',
       };
     })
     .sort((a, b) => b.score - a.score || a.i - b.i)
-    .map(({ id, name, why }) => ({ id, name, why }));
+    .map(({ id, name, why, traits }) => ({ id, name, why, traits }));
 }
 
 // Skin task output also holds non-concern entries (all, skin_age, resize_image): keep only the asked keys.
