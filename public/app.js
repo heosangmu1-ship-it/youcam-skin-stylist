@@ -6,11 +6,23 @@ async function api(path, opts) {
   const r = await fetch(path, opts);
   if (r.status === 204) return null;
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || `Request failed (${r.status})`);
+  if (!r.ok) throw Object.assign(new Error(j.error || `Request failed (${r.status})`), { code: j.code });
   return j;
 }
 const units = () => { $('units').textContent = cfg.mode === 'live' ? `Free units used: ${cfg.unitsSpent} of ${cfg.unitCap}` : 'Demo mode: recorded results, no API units used.'; };
 const refresh = async () => { cfg = await api('/api/config'); units(); };
+const MIN_SIDE = 480, MAX_BYTES = 8 * 1024 * 1024;
+// Warn only, never block: the server and YouCam decide.
+async function checkPhoto(f) {
+  const warns = [];
+  if (f.size > MAX_BYTES) warns.push('The file is larger than 8 MB and will be rejected.');
+  try {
+    const bmp = await createImageBitmap(f);
+    if (Math.min(bmp.width, bmp.height) < MIN_SIDE) warns.push(`The short side is ${Math.min(bmp.width, bmp.height)} px; use at least ${MIN_SIDE} px.`);
+    bmp.close();
+  } catch { warns.push('This image could not be read in the browser.'); }
+  $('photo-note').textContent = warns.length ? `${warns.join(' ')} See the photo tips above.` : '';
+}
 const ready = () => ($('analyze').disabled = !($('consent').checked && (picked || $('file').files[0])));
 
 function el(tag, props = {}, ...kids) {
@@ -34,7 +46,7 @@ async function init() {
     input.addEventListener('change', () => { picked = s; $('file').value = ''; ready(); });
     return el('label', {}, input, el('img', { src: s.url, alt: `Sample face ${s.id}`, width: 88, height: 104 }));
   }));
-  $('file').addEventListener('change', () => { picked = null; document.querySelectorAll('[name=sample]').forEach((r) => (r.checked = false)); ready(); });
+  $('file').addEventListener('change', () => { picked = null; document.querySelectorAll('[name=sample]').forEach((r) => (r.checked = false)); $('tips').classList.remove('flag'); $('photo-note').textContent = ''; if ($('file').files[0]) checkPhoto($('file').files[0]); ready(); });
   $('consent').addEventListener('change', ready);
   $('analyze').addEventListener('click', analyze);
   $('tryon').addEventListener('click', tryon);
@@ -56,7 +68,10 @@ async function analyze() {
       el('div', { className: 'bar', role: 'img', ariaLabel: `${c.label} ${c.score} out of 100` }, el('span', { style: `width:${c.score}%` })))));
     $('skin').hidden = false; $('delete').hidden = false;
     say('Skin result ready.');
-  } catch (e) { say(e.message, true); }
+  } catch (e) {
+    say(e.message, true);
+    if (e.code) { $('tips').classList.add('flag'); $('photo-note').textContent = `${e.message} Check the photo tips above.`; }
+  }
   await refresh().catch(() => {});
   ready();
 }

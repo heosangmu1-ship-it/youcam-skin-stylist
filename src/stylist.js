@@ -1,6 +1,5 @@
 // Rule-based stylist, no LLM. Pure functions.
-// Polarity: YouCam ui_score is read as higher = better skin (UNCONFIRMED, probe live
-// and flip this one constant if wrong).
+// Polarity: YouCam ui_score higher = healthier skin (confirmed live).
 export const HIGHER_IS_BETTER = true;
 const quality = (score) => (HIGHER_IS_BETTER ? score : 100 - score); // 0..100, higher = healthier
 export const severity = (score) => 100 - quality(score);
@@ -61,3 +60,9 @@ export function rank(concerns, catalog) {
     .sort((a, b) => b.score - a.score || a.i - b.i)
     .map(({ id, name, why }) => ({ id, name, why }));
 }
+
+// Skin task output also holds non-concern entries (all, skin_age, resize_image): keep only the asked keys.
+export const concernsFrom = (output, keys) => keys.flatMap((key) => {
+  const o = output.find((x) => x.type === key);
+  return o ? [{ key, label: LABELS[key], score: Math.round(o.ui_score), verdict: verdict(o.ui_score) }] : [];
+});

@@ -40,7 +40,7 @@ export async function startMock({ key = 'test-key' } = {}) {
         if (t.polls++ < mock.runningPolls) return json(res, 200, { status: 200, data: { task_status: 'running' } });
         if (mock.fail[kind]) return json(res, 200, { status: 200, data: { task_status: 'error', error: mock.fail[kind] } });
         const results = kind === 'skin'
-          ? { output: [['radiance', 40], ['redness', 30], ['dark_circle_v2', 60], ['moisture', 75]].map(([type, s]) => ({ type, ui_score: s, raw_score: s, mask_urls: [] })) }
+          ? { output: [['radiance', 40], ['redness', 30], ['dark_circle_v2', 60], ['moisture', 75]].map(([type, s]) => ({ type, ui_score: s, raw_score: s, mask_urls: [] })).concat([{ type: 'all', score: 55 }, { type: 'skin_age', score: 31 }, { type: 'resize_image', url: 'x' }]) }
           : { url: `${base}/result.png` };
         return json(res, 200, { status: 200, data: { task_status: 'success', results } });
       }

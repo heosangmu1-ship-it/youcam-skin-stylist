@@ -3,11 +3,11 @@ import { COSTS } from './units.js';
 export const DEFAULT_BASE = 'https://yce-api-01.makeupar.com';
 // SD concern names only; never mix with HD names. 4 concerns = 9 units.
 export const SKIN_CONCERNS = ['radiance', 'redness', 'dark_circle_v2', 'moisture'];
-export const GARMENT_CATEGORY = 'full_body'; // unconfirmed against live API
+export const GARMENT_CATEGORY = 'full_body';
 
 const FRIENDLY = {
   error_below_min_image_size: 'The photo is too small. Use a larger, sharper photo.',
-  error_src_face_too_small: 'The face is too small in the photo. Move closer or crop.',
+  error_src_face_too_small: 'The face is too small in the photo. Use a close head-and-shoulders portrait where the face fills about 60-80% of the width.',
   error_src_face_out_of_bound: 'The face is cut off. Keep the whole face inside the frame.',
   error_lighting_dark: 'The photo is too dark. Use even, bright lighting.',
   error_pose: 'The pose could not be used. Face the camera with the upper body visible.',
@@ -27,6 +27,7 @@ export class YoucamError extends Error {
     super(FRIENDLY[code] ?? 'YouCam could not complete the request.');
     this.name = 'YoucamError';
     this.code = String(code);
+    this.userFixable = USER_FIXABLE.has(code);
     this.status = USER_FIXABLE.has(code) ? 422 : 502;
   }
 }

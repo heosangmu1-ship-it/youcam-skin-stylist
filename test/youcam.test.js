@@ -23,7 +23,7 @@ test('skin polls until success, returns output, commits 9', async (t) => {
   const { mock, guard, client } = await setup(); t.after(mock.close);
   const id = await client.upload(png, 'image/png');
   const out = await client.skin(id);
-  assert.deepEqual(out.map((o) => o.type), SKIN_CONCERNS);
+  assert.deepEqual(out.map((o) => o.type), [...SKIN_CONCERNS, 'all', 'skin_age', 'resize_image']); // raw output keeps extras
   assert.ok(mock.counters.polls >= 2);
   assert.equal(guard.spent, 9);
 });

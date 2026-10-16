@@ -2,3 +2,10 @@ test:
   image: node:22
   script:
     - node --test
+
+secret-scan:
+  image: node:22
+  variables:
+    GIT_DEPTH: "0" # full history for the scan
+  script:
+    - sh scripts/secret-scan.sh

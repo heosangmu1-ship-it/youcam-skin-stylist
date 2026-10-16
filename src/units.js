@@ -3,15 +3,19 @@
 // and a second process such as a script sees the same numbers). Reserved units
 // stay on disk until settled, so a crash mid-call is counted as spent next run.
 import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-export const COSTS = { skin: 9, tryon: 2 }; // skin: <= 4 SD concerns; tryon: v4 assumed 2 until measured
+// Repo-root default so servers, scripts and probes share one ledger from any cwd.
+const DEFAULT_LEDGER = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'var', 'units.json');
+
+export const COSTS = { skin: 9, tryon: 2 }; // skin: 4 SD concerns; tryon: cloth-v4 (both measured live)
 
 export class UnitCapError extends Error {
   constructor(msg) { super(msg); this.name = 'UnitCapError'; this.status = 429; }
 }
 
-export function createGuard({ path = process.env.LEDGER_PATH || 'var/units.json', cap = Number(process.env.UNIT_CAP) } = {}) {
+export function createGuard({ path = process.env.LEDGER_PATH || DEFAULT_LEDGER, cap = Number(process.env.UNIT_CAP) } = {}) {
   if (!(cap > 0)) cap = 800;
   const load = () => {
     try { return JSON.parse(readFileSync(path, 'utf8')); }
@@ -24,7 +28,7 @@ export function createGuard({ path = process.env.LEDGER_PATH || 'var/units.json'
     renameSync(tmp, path);
   };
   const guard = {
-    cap,
+    cap, path,
     get spent() { return load().spent; },
     reserve(cost) {
       const s = load();

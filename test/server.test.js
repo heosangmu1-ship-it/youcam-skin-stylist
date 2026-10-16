@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { startApp, post, consent } from './helpers.js';
+import { readFileSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createApp } from '../src/server.js';
+import { createGuard } from '../src/units.js';
+import { startApp, post, consent, catalog, tmpLedger } from './helpers.js';
 import { startMock } from './mock-youcam.js';
 import { createSessions } from '../src/sessions.js';
 
@@ -168,4 +172,42 @@ test('static: index, content types, traversal blocked', async (t) => {
     });
   });
   assert.match(raw, /^HTTP\/1.1 404/);
+});
+
+test('skin output with extra entries (all, skin_age, resize_image) is ignored safely', async (t) => {
+  const { app } = await live(t);
+  const s = await (await post(app.url, '/api/skin?sample=sample-1', { headers: consent })).json();
+  assert.deepEqual(s.concerns.map((c) => c.key), ['radiance', 'redness', 'dark_circle_v2', 'moisture']);
+});
+
+test('tryon body "null" is a 400, not a 500', async (t) => {
+  const app = await demo(t);
+  const r = await post(app.url, '/api/tryon', { body: 'null' });
+  assert.equal(r.status, 400);
+});
+
+test('tryon rejects duplicate garment ids (no double charge)', async (t) => {
+  const { mock, app } = await live(t);
+  const s = await (await post(app.url, '/api/skin?sample=sample-1', { headers: consent })).json();
+  const r = await post(app.url, '/api/tryon', { json: { sessionId: s.sessionId, garmentIds: ['ivory-knit', 'ivory-knit'] } });
+  assert.equal(r.status, 400);
+  assert.equal(mock.counters.tryon, 0);
+});
+
+test('malformed demo fixture is "no recorded data" (404), not a 500', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'fx-'));
+  writeFileSync(join(dir, 'sample-1.json'), '{"skin":"nope"}');
+  const server = createApp({ client: null, ledger: createGuard({ path: tmpLedger() }), catalog, fixturesDir: dir });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  t.after(() => { server.closeAllConnections(); server.close(); });
+  const r = await post(`http://127.0.0.1:${server.address().port}`, '/api/skin?sample=sample-1', { headers: consent });
+  assert.equal(r.status, 404);
+});
+
+test('user-fixable YouCam error carries a code for the UI tips', async (t) => {
+  const { mock, app } = await live(t);
+  mock.fail.skin = 'error_src_face_too_small';
+  const r = await post(app.url, '/api/skin?sample=sample-1', { headers: consent });
+  assert.equal(r.status, 422);
+  assert.equal((await r.json()).code, 'error_src_face_too_small');
 });

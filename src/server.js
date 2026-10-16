@@ -2,7 +2,7 @@ import http from 'node:http';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, join, extname, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { rank, verdict, LABELS } from './stylist.js';
+import { rank, concernsFrom } from './stylist.js';
 import { createSessions } from './sessions.js';
 import { createClient, DEFAULT_BASE, SKIN_CONCERNS } from './youcam.js';
 import { createGuard, UnitCapError } from './units.js';
@@ -12,7 +12,7 @@ const MAX_IMAGE = 8 * 1024 * 1024;
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.json': 'application/json', '.svg': 'image/svg+xml' };
 
 const fail = (status, message) => Object.assign(new Error(message), { status });
-const sniff = (b) => (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 ? 'image/png' : b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff ? 'image/jpeg' : null);
+export const sniff = (b) => (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 ? 'image/png' : b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff ? 'image/jpeg' : null);
 
 function readBody(req, max) {
   return new Promise((ok, no) => {
@@ -28,7 +28,7 @@ export function createApp({ client = null, ledger, sessions = createSessions(), 
   publicDir = resolve(publicDir);
   const samples = readdirSync(join(publicDir, 'samples')).filter((f) => /\.(png|jpe?g)$/i.test(f)).sort()
     .map((file) => ({ id: file.replace(/\.[^.]+$/, ''), file, url: `/samples/${file}` }));
-  const fixture = (id) => { try { return JSON.parse(readFileSync(join(fixturesDir, `${id}.json`), 'utf8')); } catch { return null; } };
+  const fixture = (id) => { try { const f = JSON.parse(readFileSync(join(fixturesDir, `${id}.json`), 'utf8')); return Array.isArray(f?.skin) ? f : null; } catch { return null; } };
   const send = (res, status, obj) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); };
 
   async function skin(req, res, url) {
@@ -53,10 +53,7 @@ export function createApp({ client = null, ledger, sessions = createSessions(), 
       if (!type) throw fail(415, 'Only JPEG or PNG photos are supported.');
       ({ fileId, output } = await client.analyze(bytes, type));
     }
-    const concerns = SKIN_CONCERNS.flatMap((key) => {
-      const o = output.find((x) => x.type === key);
-      return o ? [{ key, label: LABELS[key], score: Math.round(o.ui_score), verdict: verdict(o.ui_score) }] : [];
-    });
+    const concerns = concernsFrom(output, SKIN_CONCERNS);
     const ranked = rank(concerns, catalog);
     const s = sessions.create({ fileId, sample: sampleId, ranked });
     send(res, 200, { sessionId: s.id, concerns, ranked });
@@ -65,10 +62,11 @@ export function createApp({ client = null, ledger, sessions = createSessions(), 
   async function tryon(req, res) {
     let body;
     try { body = JSON.parse(await readBody(req, 10_000)); } catch (e) { throw e.status ? e : fail(400, 'Invalid JSON.'); }
+    if (!body || typeof body !== 'object') throw fail(400, 'Invalid JSON.');
     const s = sessions.get(body.sessionId);
     if (!s) throw fail(404, 'Session not found or expired.');
     const ids = body.garmentIds;
-    if (!Array.isArray(ids) || !ids.length || ids.length > 3 || !ids.every((id) => catalog.some((g) => g.id === id))) throw fail(400, 'Pick 1 to 3 garments from the catalog.');
+    if (!Array.isArray(ids) || !ids.length || ids.length > 3 || new Set(ids).size !== ids.length || !ids.every((id) => catalog.some((g) => g.id === id))) throw fail(400, 'Pick 1 to 3 garments from the catalog.');
     const settled = await Promise.allSettled(ids.map(async (id) => {
       const g = catalog.find((x) => x.id === id);
       const bytes = readFileSync(join(publicDir, 'garments', g.file));
@@ -122,7 +120,7 @@ export function createApp({ client = null, ledger, sessions = createSessions(), 
     } catch (e) {
       const status = e.status ?? 500;
       if (status === 500) console.error('internal error:', e.name);
-      send(res, status, { error: status === 500 ? 'Internal error.' : e.message });
+      send(res, status, { error: status === 500 ? 'Internal error.' : e.message, ...(e.userFixable && { code: e.code }) });
     }
   });
 }
@@ -136,5 +134,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   setInterval(() => sessions.sweep(), 30_000).unref();
   const catalog = JSON.parse(readFileSync(join(ROOT, 'catalog.json'), 'utf8'));
   const server = createApp({ client, ledger, sessions, catalog });
-  server.listen(process.env.PORT === undefined ? 8787 : Number(process.env.PORT), () => console.log(`listening on http://localhost:${server.address().port} mode=${client ? 'live' : 'demo'}`));
+  server.listen(process.env.PORT === undefined ? 8787 : Number(process.env.PORT), () => console.log(`listening on http://localhost:${server.address().port} mode=${client ? 'live' : 'demo'} ledger=${ledger.path}`));
 }
